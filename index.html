@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Вогник</title>
+<meta name="theme-color" content="#161316">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Вогник">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: тепло, інтимно, сучасно
+   IDEA: колода карт, розкладена віялом, як вибір платівок
+   PICTURE: віяло кольорових карт з абстрактними фігурами, скляна куля «Обрати навмання»
+   COLOUR and TYPE: #161316, #453027, #FF6D29, #BABABA, #FFFFFF; Inter Tight замість Neue Montreal
+   LAYOUT: головна з плитками → колода-карусель → відкрита карта з вертикальним гортанням */
+:root{color-scheme:dark;--o:#FF6D29;--br:#453027;--bg:#161316;--g:#BABABA;--w:#fff;--glass:rgba(69,48,39,.42);--line:rgba(255,255,255,.16);--cw:min(60vw,270px)}
+*{box-sizing:border-box;min-width:0}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--w);font:16px/1.5 'Inter Tight',system-ui,sans-serif;overflow-x:clip;position:relative;background:transparent;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+ background:radial-gradient(38% 30% at 8% 42%,rgba(255,109,41,.55),transparent 70%),radial-gradient(45% 35% at 92% 85%,rgba(255,109,41,.28),transparent 70%),radial-gradient(60% 45% at 55% 65%,rgba(120,52,22,.55),transparent 75%),radial-gradient(40% 30% at 80% 10%,rgba(69,48,39,.7),transparent 70%);
+ filter:blur(30px);animation:drift 22s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(3%,-4%) scale(1.06)}}
+body.lock{overflow:hidden}
+:focus-visible{outline:2px solid var(--o);outline-offset:2px}
+.view[hidden]{display:none}
+.home{display:flex;flex-direction:column;max-width:900px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 28px) 12px 12px}
+.hero{display:flex;flex-direction:column;gap:clamp(28px,7vw,48px);padding:0 6px 16px}
+.big{margin:0;font:600 clamp(52px,15vw,104px)/.92 'Inter Tight',sans-serif;letter-spacing:-.05em;display:flex;flex-direction:column;color:#fff}
+.big .dim,.dt .dim{color:rgba(255,255,255,.42)}
+.line{margin:0;color:var(--g);font-size:16px}
+.stat{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.stat>div>b{display:block;font-weight:600;font-size:16px}.stat>div>span{color:var(--g);font-size:14px}
+.num{flex:none}.num strong{display:block;font:600 clamp(56px,16vw,96px)/.85 'Inter Tight',sans-serif;letter-spacing:-.05em;text-align:right}
+.num small{display:block;text-align:right;font:500 15px 'Inter Tight',sans-serif;color:var(--g);margin-bottom:6px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.tile{--rad:8px;display:flex;flex-direction:column;text-decoration:none;color:#fff;border-radius:8px;padding:14px 14px 12px;aspect-ratio:3/3.7;transition:transform .2s;text-shadow:0 1px 10px rgba(0,0,0,.35)}
+.tile:active{transform:scale(.98)}
+.tile h3{margin:0;font:600 clamp(19px,5.2vw,26px)/1.05 'Inter Tight',sans-serif;letter-spacing:-.03em}
+.tile h3 b,.tile h3 span{display:block;font-weight:600}
+.tile p{margin:auto 0 0;font-size:13.5px;line-height:1.3;color:rgba(255,255,255,.82)}
+.tile h3 span{color:rgba(255,255,255,.66)}
+.t3{grid-column:1/-1;aspect-ratio:auto;min-height:170px}
+@media(min-width:720px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.t3{grid-column:auto;aspect-ratio:3/3.7}}
+.backbtn,.ic{all:unset;flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);cursor:pointer;color:#fff;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.backbtn svg,.ic svg{width:22px;height:22px}
+.backbtn:focus-visible,.ic:focus-visible{outline:2px solid var(--o);outline-offset:2px}
+.ic[aria-pressed=true]{background:var(--o);border-color:var(--o);color:#1a0d06}
+/* deck */
+.deck{min-height:100svh;display:flex;flex-direction:column;padding-top:calc(env(safe-area-inset-top) + 12px);animation:slin .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes slin{from{transform:translateX(40px);opacity:0}}
+.dhead{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:0 max(4vw,14px);max-width:900px;width:100%;margin:0 auto}
+.dt{margin:0;font:600 clamp(38px,11vw,64px)/.95 'Inter Tight',sans-serif;letter-spacing:-.045em;display:flex;flex-direction:column}
+.filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:16px max(4vw,14px) 0;max-width:900px;width:100%;margin:0 auto}
+.filters[hidden]{display:none}
+.dd{position:relative}
+.ddb{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:48px;padding:0 14px;background:var(--glass);border:1px solid var(--line);border-radius:999px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ddb b{font-weight:500;font-size:15px}
+.ddb span{color:var(--g);font-size:13px;margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ddb i{width:8px;height:8px;border-right:2px solid var(--g);border-bottom:2px solid var(--g);transform:rotate(45deg) translateY(-3px);transition:transform .2s;flex:none}
+.ddb[aria-expanded=true]{border-color:var(--o)}
+.ddb[aria-expanded=true] i{transform:rotate(225deg) translateY(-2px)}
+.opts{position:absolute;top:calc(100% + 8px);left:0;z-index:40;width:max(100%,230px);padding:8px;display:grid;background:rgba(40,28,24,.95);border:1px solid var(--line);border-radius:20px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 20px 40px -10px rgba(0,0,0,.6)}
+.opts.r{left:auto;right:0}.opts[hidden]{display:none}
+.opt{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 8px;border-radius:12px;cursor:pointer}
+.opt input{appearance:none;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--g);display:grid;place-items:center;margin:0;flex:none}
+.opt input:checked{background:var(--o);border-color:var(--o)}
+.opt input:checked::after{content:"";width:6px;height:10px;border:solid #1a0d06;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.opt .dots{margin-left:auto}
+.dots{display:flex;gap:5px}.dots i{width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;opacity:.9}.dots i.on{background:currentColor}
+.car{flex:1;display:flex;align-items:center;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;padding:34px calc(50% - var(--cw)/2);perspective:1100px;scrollbar-width:none;min-height:calc(var(--cw)*1.37 + 80px)}
+.car::-webkit-scrollbar{display:none}
+.mc{all:unset;box-sizing:border-box;flex:none;color:#fff;width:var(--cw);aspect-ratio:3/4.1;scroll-snap-align:center;margin-inline:calc(var(--cw)*-.09);border-radius:8px;padding:14px;display:flex;flex-direction:column;cursor:pointer;box-shadow:0 18px 40px -14px rgba(0,0,0,.65);will-change:transform;transform-origin:50% 100%}
+.mc:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.mc small{font-size:12.5px;display:flex;justify-content:space-between;align-items:center;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.mc .fl{flex:1;display:grid;place-items:center}.mc .fl svg{width:34%;flex:none;margin:0;opacity:.9;filter:drop-shadow(0 4px 14px rgba(0,0,0,.35))}
+.mc .lab{font-weight:600;font-size:15px;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+.mc b{display:block;font-weight:600;font-size:clamp(16px,4.6vw,21px);line-height:1.12;letter-spacing:-.02em;margin-top:6px;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.mc svg{flex:1;width:100%;min-height:0;margin-top:6px}
+.mc .lab{font-size:13px;margin-top:6px}
+.mc.chosen{animation:pulse .5s ease 2}
+@keyframes pulse{50%{box-shadow:0 0 0 4px #fff,0 18px 50px -10px rgba(255,109,41,.9)}}
+.spin{display:grid;justify-items:center;gap:10px;padding:4px 16px calc(env(safe-area-inset-bottom) + 22px)}
+.spinbtn{all:unset;box-sizing:border-box;cursor:pointer;width:132px;height:132px;border-radius:50%;display:grid;place-items:center;text-align:center;position:relative;font-weight:600;font-size:15px;line-height:1.2;
+ background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.38),rgba(255,255,255,.06) 42%,rgba(255,109,41,.28) 70%,rgba(69,48,39,.55));border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 -10px 30px rgba(0,0,0,.25),0 20px 40px -14px rgba(255,109,41,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .15s}
+.spinbtn:active{transform:scale(.95)}
+.spinbtn.go{animation:breathe .8s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(.94)}}
+@keyframes rot{to{transform:rotate(360deg)}}
+.spinbtn:disabled{cursor:default}
+.hint{margin:0;color:var(--g);font-size:13.5px;text-align:center}
+/* gradients */
+.gr{position:relative;overflow:hidden;isolation:isolate;clip-path:inset(0 round var(--rad,8px));-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0)}
+.gr::before{content:"";position:absolute;inset:-22%;background:var(--gr);filter:blur(16px) saturate(.78) brightness(.78);z-index:-1}
+.gr::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 0 26px rgba(255,255,255,.12);pointer-events:none;z-index:1}
+.mc{--rad:8px}
+/* open */
+.open{min-height:100svh;display:flex;flex-direction:column;animation:up .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(30px);opacity:0}}
+.obar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 12px) max(4vw,14px) 10px;background:rgba(22,19,22,.55);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.otxt{flex:1;line-height:1.15}
+.otxt b{display:block;font-weight:600;font-size:clamp(20px,5.6vw,26px);letter-spacing:-.03em}
+.otxt span{color:var(--g);font-size:13.5px}
+.obody{flex:1;width:100%;max-width:900px;margin:0 auto;padding:6px max(4vw,14px) 20px}
+.bc{position:relative;isolation:isolate;overflow:hidden;width:min(480px,100%);margin:0 auto;min-height:calc(100svh - 210px);border-radius:24px;display:flex;flex-direction:column;padding:20px;background:linear-gradient(180deg,#0f0c0c 0%,#0f0c0c 38%,var(--tint,#0f0c0c) 100%);color:#fff;border:1px solid rgba(255,255,255,.1);box-shadow:0 30px 60px -24px rgba(0,0,0,.7);clip-path:inset(0 round 24px)}
+.bc::before{content:"";position:absolute;left:-15%;right:-15%;bottom:-6%;height:72%;z-index:-2;background:var(--glow);filter:blur(16px) saturate(.8);opacity:.72}
+.bc .row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#BABABA}
+.bc .row .dots{color:var(--o)}
+.bc h3{margin:22px 0 14px;font:600 clamp(36px,10vw,48px)/.98 'Inter Tight',sans-serif;letter-spacing:-.045em;display:flex;flex-direction:column;text-wrap:balance}
+.bc h3 .dim{color:rgba(255,255,255,.42)}
+.art{flex:none;height:clamp(170px,34svh,300px);border-radius:14px;margin:8px;display:flex;flex-direction:column;justify-content:space-between;padding:14px;font-size:13px;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.art .row{display:flex;justify-content:space-between;align-items:center}
+.bc.sx .art{height:clamp(120px,20svh,170px)}
+.art h3{margin:0;font:600 clamp(30px,8.6vw,40px)/1 'Inter Tight',sans-serif;letter-spacing:-.04em;text-shadow:0 2px 16px rgba(0,0,0,.4)}
+.txt{display:flex;flex-direction:column;flex:1}
+.txt .task .dim{color:rgba(255,255,255,.42)}
+.txt .task{display:flex;flex-direction:column;margin:22px 0 0;font:600 clamp(32px,9vw,44px)/1.02 'Inter Tight',sans-serif;letter-spacing:-.035em;text-wrap:balance}
+.txt .intro{margin:0;color:var(--g);font-size:15px}
+.tag{align-self:flex-start;font-size:13px;border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:3px 12px;margin-top:0;color:var(--g)}
+.who{display:grid;gap:8px;margin-top:12px}
+.who div{border-radius:14px;padding:10px 13px;font-size:14.5px;line-height:1.42;background:rgba(30,22,20,.55);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.who b{display:block;font-weight:600;font-size:12px;margin-bottom:2px;color:var(--o)}
+.tip{font-size:13.5px;margin:12px 0 0;color:var(--g)}
+.bonus{margin-top:12px;padding:10px 13px;border-radius:14px;background:rgba(30,22,20,.55);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:14px}
+.bonus b{font-weight:600;color:var(--o)}
+.swh{text-align:center;color:var(--g);font-size:13px;margin:14px 0 0}
+.oh{font:600 clamp(26px,7vw,34px)/1.05 'Inter Tight',sans-serif;letter-spacing:-.035em;margin:44px 0 14px}
+.ogrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 10px}
+@media(min-width:720px){.ogrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.ot{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;aspect-ratio:1/1.12;border-radius:20px;padding:14px;color:#fff;border:1px solid rgba(255,255,255,.1);border-color:transparent;background:linear-gradient(#100d0d,#100d0d) padding-box,linear-gradient(155deg,color-mix(in srgb,var(--gb,#fff) 32%,transparent) 0%,color-mix(in srgb,var(--ga,#FF6D29) 24%,transparent) 30%,rgba(255,255,255,.07) 65%,rgba(255,255,255,.07) 100%) border-box}
+.ot .row{display:flex;justify-content:space-between;font-size:12.5px;color:#BABABA}
+.ot p{margin:10px 0 0;font-weight:600;font-size:clamp(15px,4.2vw,18px);line-height:1.2;letter-spacing:-.015em;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.ot p .dim{display:block;color:rgba(255,255,255,.45)}
+.ot.cur{outline:2px solid #fff;outline-offset:3px}
+.ot:focus-visible{outline:2px solid var(--o);outline-offset:2px}
+.obtm{position:sticky;bottom:0;z-index:20;display:flex;gap:8px;padding:10px max(4vw,14px) calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(transparent,rgba(22,19,22,.85) 40%)}
+.obtm .btn{max-width:260px}
+.obtm{justify-content:center}
+.btn{flex:1;font:500 16px 'Inter Tight',sans-serif;border-radius:999px;min-height:54px;padding:0 18px;cursor:pointer;border:1px solid var(--line);background:var(--glass);color:#fff;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);white-space:nowrap}
+.btn.main{background:var(--o);border-color:var(--o);color:#1a0d06;font-weight:600;box-shadow:0 10px 30px -8px rgba(255,109,41,.6)}
+.empty{color:var(--g);text-align:center;margin:auto;padding:40px 20px}
+@media(prefers-reduced-motion:reduce){body::before,.deck,.open{animation:none}.spinbtn.go{animation:none}}
+</style>
+</head>
+<body>
+<section class="view home" id="home">
+  <div class="hero">
+    <h1 class="big"><span>Вогник</span><span class="dim">Ближче щовечора</span></h1>
+    <p class="line">Гра для двох · три колоди · <span id="total"></span> карти</p>
+  </div>
+  <div class="tiles">
+    <a class="tile gr" data-g="0" href="#prelude">
+      <h3><b>Прелюдія</b><span>Дотики й поцілунки</span></h3>
+      <p>Завдання, щоб розігріти вечір повільно</p>
+    </a>
+    <a class="tile gr" data-g="7" href="#talk">
+      <h3><b>Розмови</b><span>Чесно й відверто</span></h3>
+      <p>Питання, щоб краще відчути одне одного</p>
+    </a>
+    <a class="tile t3 gr" data-g="2" href="#sex">
+      <h3><b>Без відстані</b><span>Тіло до тіла</span></h3>
+      <p>Інструкції для обох, фільтри за настроєм і складністю</p>
+    </a>
+  </div>
+</section>
+<section class="view deck" id="deck" hidden>
+  <div class="dhead"><button class="backbtn" data-back aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h1 class="dt"><span id="dT"></span><span class="dim" id="dS"></span></h1></div>
+  <div class="filters" id="filters" hidden>
+    <div class="dd"><button class="ddb" aria-expanded="false" aria-controls="moods"><b>Настрій</b><span id="sumM">усі</span><i></i></button><div class="opts" id="moods" hidden></div></div>
+    <div class="dd"><button class="ddb" aria-expanded="false" aria-controls="levels"><b>Складність</b><span id="sumL">усі</span><i></i></button><div class="opts r" id="levels" hidden></div></div>
+  </div>
+  <div class="car" id="car" role="list" aria-label="Колода"></div>
+  <div class="spin"><button class="spinbtn" id="spin"><span>Обрати<br>навмання</span></button><p class="hint">або гортай колоду й тапни на картку</p></div>
+</section>
+<section class="view open" id="open" hidden>
+  <div class="obar"><button class="backbtn" data-back aria-label="До колоди"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="otxt"><b id="oT"></b><span id="oS"></span></div>
+    <button class="ic" id="tried" aria-pressed="false" aria-label="Було"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="ic" id="fav" aria-pressed="false" aria-label="В улюблені"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+  </div>
+  <div class="obody">
+    <div id="oc"></div>
+    <p class="swh">Гортай вниз: інші картки з колоди <span aria-hidden="true">↓</span></p>
+    <h2 class="oh">Інші картки з колоди</h2>
+    <div class="ogrid" id="ogrid"></div>
+  </div>
+  <div class="obtm"><button class="btn" id="toDeck">До колоди</button><button class="btn main" id="next">Наступна</button></div>
+</section>
+<script>
+{
+const PRE=["Поцілуй мене повільно|ніби в нас уся ніч", "Проведи пальцями від шиї до поперека|і нічого більше", "Цілуй лише мої руки|долоні, зап’ястя, пальці", "Дивіться одне одному в очі|хвилину, мовчки", "Зніми з мене одну річ|тільки одну", "Прошепочи мені на вухо|що хочеш зробити далі", "Масаж плечей|поки рахуєш до шістдесяти", "Поцілуй три нові місця|де ще ніколи не цілував(-ла)", "Торкайся мене кінчиками пальців|ніби вперше", "Обійми мене ззаду|і не відпускай хвилину", "Зав’яжи мені очі|і поцілуй там, де я не чекаю", "Підійди дуже близько|але не торкайся, тримай паузу", "Поцілунки вздовж ключиць|повільно, від плеча до плеча", "Покажи на мені|як тобі подобається, щоб торкались тебе", "Подихай мені в шию|повільно й тепло", "Легенько прикуси мочку вуха|тільки легенько", "Пропусти моє волосся крізь пальці|повільно, без поспіху", "Цілуй мене|але руки тримай за спиною", "Скажи, що тобі в мені подобається|і торкнись цього місця", "Обведи пальцем мої губи|повільно, по контуру", "Один ґудзик за один поцілунок|ти розстібаєш, я цілую", "Масаж стоп|дві хвилини, без поспіху", "Поцілунок на тридцять секунд|рахуй подумки", "Повільний танець|під одну пісню, тісно обійнявшись", "Наступні дві хвилини|я лише слухаюсь твоїх рук", "Намалюй слово на моїй спині|а я вгадаю", "Цілуй мою шию|поки я не попрошу зупинитись", "Обери на мені одне місце|і подаруй йому десять поцілунків", "Притисни мене до стіни|і поцілуй", "Візьми мене за руки|ніби ми на першому побаченні"];
+const TALK=["Що в мені привабило тебе найпершим?|Згадай той момент", "Наш найяскравіший спільний момент?|І чому саме він", "Коли ти почуваєшся найбажанішим(-ою)?|Що я в цей момент роблю", "Де б ми опинились цієї ночі?|Якби могли бути будь-де", "Який дотик тобі найприємніший?|Покажи або опиши", "Про яку фантазію ти мені ще не казав(-ла)?|Можна почати з натяку", "Що для тебе близькість поза ліжком?|Як вона виглядає в буденності", "Коли ти востаннє думав(-ла) про мене посеред дня?|І що саме думав(-ла)", "Чого тобі хочеться більше в наших стосунках?|Одне головне", "Тобі легше попросити чи показати?|І чому так", "Яке слово ти хочеш чути від мене частіше?|Скажи його вголос", "Як мені допомогти тобі говорити про бажання?|Що полегшить розмову", "Яка частина свого тіла тобі подобається найбільше?|І за що", "Що допомагає тобі розслабитися поруч зі мною?|Навіть дрібниці", "Яке побачення ти б мені влаштував(-ла)?|Опиши від початку до кінця", "Що ти відчуваєш, коли я тебе обіймаю?|Одним-двома словами", "Що ти запам’ятав(-ла) з нашої першої ночі?|Перше, що спадає на думку", "Що ти ще не пробував(-ла), але цікаво?|Без сорому, просто назви", "Як ти без слів розумієш, що мені добре?|Які знаки помічаєш", "Ранок чи ніч?|І чому саме так", "Яка дрібниця тебе заводить найбільше?|Таке, що здається неважливим", "Чого тобі не вистачало останнім часом?|Чесно", "Яка пісня асоціюється в тебе з нами?|Можна одразу увімкнути", "Що ти хочеш почути від мене прямо зараз?|Я скажу", "Яка моя звичка тобі найбільше подобається?|Навіть якщо дивна", "Яким є ідеальний вечір удвох?|Для тебе, в деталях", "Коли ти почуваєшся найсміливішим(-ою)?|Зі мною чи загалом", "Слова, погляд чи дотик?|Що з цього найсексуальніше", "Що ми спробуємо цього місяця?|Обери щось одне", "За що ти мені вдячний(-а) сьогодні?|Навіть за дрібницю", "Що в мені найсексуальніше як у людині?|Не про зовнішність", "Яка моя річ з одягу тобі подобається найбільше?|Саме на мені", "Коли ти вперше по-справжньому мене захотів(-ла)?|Що тоді було", "Опиши мою сексуальність|Трьома словами", "Що мені робити після сексу?|Щоб ти почувався(-лась) потрібним(-ою)", "Що ти хочеш змінити у своїй сексуальності?|І як я можу допомогти", "Коли тобі найлегше отримати задоволення?|За яких умов", "Що я можу робити поза спальнею?|Щоб ти відчував(-ла) нашу близькість", "Керувати чи підкорятися?|А може, по черзі", "Що я роблю за звичкою, але тебе це не заводить?|Чесно, без образ", "Що мають робити мої руки, коли ми цілуємось?|Опиши або покажи", "Яка фантазія з юності досі тебе хвилює?|Можна коротко", "Яка поза тобі найприємніша?|А яка найменше і чому", "Що з твоїх уподобань ти хочеш дослідити зі мною?|Почнімо з одного", "Тобі хотілося б більше напору?|Як саме", "Тобі подобається, коли я говорю під час сексу?|Більше чи менше", "Про що ти соромишся мене попросити?|Я не засуджуватиму", "Покажеш рукою, як тобі найприємніше?|Можна просто зараз", "Що з того, що я робив(-ла) для тебе, було найкращим?|Хочу повторити", "З якою іграшкою ти хочеш спробувати?|Разом зі мною", "Яку фантазію ти лишив(-ла) б лише фантазією?|Розкажеш?", "Тебе збуджує ризик бути поміченими?|Де саме", "Що ти відчуваєш просто зараз?|Під час цієї розмови", "Що тобі хочеться зробити зі мною прямо зараз?|Без фільтрів"];
+const SEX=[
+['Місіонерська','Класика обличчям до обличчя.','Лежить на спині, коліна трохи зігнуті й розведені.','Зверху між ногами А, спирається на лікті чи долоні біля плечей А.','Тримай вагу на руках, щоб не тиснути на партнера.','ніжно',1],
+['Наїзниця','Той, хто зверху, задає темп.','Лежить на спині, ноги прямі або зігнуті в колінах.','Сидить верхи на стегнах А обличчям до нього, коліна по боках, долоні можна покласти на груди А.','А може тримати Б за стегна й допомагати з ритмом.','пристрасно',1],
+['Зворотна наїзниця','Наїзниця, але спиною.','Лежить на спині, ноги прямі.','Сидить верхи на А спиною до нього, руки спираються на коліна чи стегна А.','Кут незвичний, тож починайте повільно.','грайливо',2],
+['Ложечки','Тепло, повільно, з обіймами.','Лежить на боці, ноги трохи зігнуті.','Лежить на тому ж боці позаду А, притискається грудьми до спини, обіймає рукою.','Подушку під голову обом, і можна не поспішати.','ніжно',1],
+['Догі-стайл','Класика ззаду.','Стоїть на колінах, спирається на долоні або лікті, спина рівна.','Стоїть на колінах позаду А, руки на стегнах А.','Подушка під коліна А рятує на твердому.','пристрасно',1],
+['Лотос','Максимум близькості.','Сідає на коліна Б обличчям до нього й обвиває ногами його талію.','Сидить зі схрещеними ногами, спина пряма.','Тісні обійми допомагають тримати рівновагу.','ніжно',2],
+['Ножиці','Переплетені ноги.','Лежить на спині, одна нога зігнута й піднята.','Лежить на боці під кутом до А, ноги обох переплітаються навхрест.','Підбирайте кут, поки обом не стане зручно.','експеримент',2],
+['Біля стіни','Спонтанно й енергійно.','Стоїть спиною до стіни, ноги на ширині плечей.','Стоїть обличчям до А, тримає за стегна.','Якщо різниця у зрості велика, нижчому допоможе сходинка чи книжка під ноги.','пристрасно',3],
+['Край ліжка','Стоячи й лежачи.','Лежить на спині, стегна на самому краю ліжка, ноги звисають або підняті.','Стоїть на підлозі між ногами А.','Якщо ліжко низьке, Б стає на коліна на подушку.','пристрасно',2],
+['Ноги на плечах','Глибший кут місіонерської.','Лежить на спині, ноги підняті, щиколотки на плечах Б.','Стоїть на колінах, тримає ноги А.','Потрібна розтяжка. Можна почати з однієї ноги.','пристрасно',2],
+['Жабка','Наїзниця навпочіпки.','Лежить на спині.','Сидить верхи навпочіпки, стопи на ліжку, долоні на грудях А.','Сильне навантаження на ноги Б. Чергуйте з колінами.','експеримент',2],
+['Недільний ранок','Ліниво й неквапно.','Лежить на боці обличчям до Б, верхня нога закинута на стегно Б.','Лежить на боці обличчям до А, підтримує ногу А рукою.','Ідеально для розмов і поцілунків.','ніжно',1],
+['На стільці','Меблі в ділі.','Сідає верхи на Б обличчям до нього, стопи на підлозі по боках стільця.','Сидить на стільці без підлокітників, стопи на підлозі.','Стілець має бути міцним і не на коліщатах.','грайливо',2],
+['Тачка','Для сміливих і спортивних.','Спирається долонями на підлогу, як у планці.','Стоїть позаду й тримає ноги А за стегна.','А швидко втомлюється, тож недовго. Можна почати з краю ліжка.','експеримент',3],
+['Метелик','На краю столу.','Лежить на спині на краю столу, стегна на краю, ноги підняті.','Стоїть між ногами А, тримає за стегна.','Постеліть на стіл плед чи рушник.','пристрасно',2],
+['Хрестик','Буквою Т.','Лежить на спині, ноги закинуті на стегна Б.','Лежить на боці перпендикулярно до А.','Дуже неквапна поза, руки вільні для дотиків.','експеримент',2],
+['Сфінкс','Лежачи ззаду.','Лежить на животі, подушка під стегнами, спирається на лікті.','Лежить зверху позаду, спирається на руки.','Подушка під стегнами змінює кут, тож варто поекспериментувати з висотою.','ніжно',1],
+['Ковзання','Місіонерська з погойдуванням.','Лежить на спині, ноги прямі.','Зверху, трохи вище, ніж у місіонерській, тіла щільно притиснуті.','Рухайтеся погойдуванням, а не поштовхами.','ніжно',2],
+['Під душем','Тепла вода й пара.','Стоїть обличчям до стіни, долоні на стіні.','Стоїть позаду А, тримає за талію.','Нековзкий килимок обов’язковий.','грайливо',2],
+['Орел','Розкрита поза.','Лежить на спині, ноги широко розведені й підняті.','Стоїть на колінах між ногами А, тримає за стегна.','А може тримати свої ноги під коліньми.','пристрасно',2],
+['Подушка','Місіонерська з апгрейдом.','Лежить на спині з подушкою під стегнами.','Зверху між ногами А, як у місіонерській.','Підібрати висоту допоможе щільна подушка чи складений плед.','ніжно',1],
+['На колінах','Обіймами ззаду.','Стоїть на колінах прямо, спиною до Б.','Стоїть на колінах позаду, притискається всім тілом, обіймає А.','Руки Б вільні, тож обіймайте й пестіть.','пристрасно',2],
+['Гойдалка','В одному ритмі.','Сидить обличчям до Б, ноги поверх ніг Б, руки позаду для опори.','Сидить так само, руки позаду для опори.','Погойдуйтеся разом, як на гойдалці.','грайливо',2],
+['Міст','Стегна вгору.','Лежить на спині, впирається стопами в ліжко, піднімає стегна.','Стоїть на колінах між ногами А, підтримує під стегна.','Подушка під поперек дасть А відпочити.','експеримент',3],
+['Пелюстка','Наїзниця з нахилом уперед.','Лежить на спині, обіймає Б.','Сидить верхи на А і лягає грудьми на груди А.','Багато поцілунків і повільний ритм.','ніжно',1],
+['Глибока місіонерська','Коліна до грудей.','Лежить на спині, коліна притиснуті до грудей.','Зверху, спирається на долоні.','Стежте за відчуттями А і за потреби зменшуйте глибину.','пристрасно',2],
+['Догі на краю ліжка','Ззаду, але стоячи.','Стоїть на колінах на краю ліжка, спирається на долоні.','Стоїть на підлозі позаду А.','Підлаштуйте висоту: Б може зігнути коліна.','пристрасно',1],
+['Стоячи ззаду','Швидко й спонтанно.','Стоїть, трохи нахиляється вперед і спирається на стіл чи комод.','Стоїть позаду А, тримає за стегна.','Опора має бути стійкою, а не на коліщатах.','пристрасно',2],
+['На колінах на краю','Спиною на коліна.','Сідає на коліна Б спиною до нього, стопи на підлозі.','Сидить на краю ліжка, стопи на підлозі.','Б може обіймати А й цілувати шию.','грайливо',2],
+['Підйом','На руках.','Обвиває Б ногами за талію, руками за шию.','Стоїть, тримає А під стегна.','Обов’язково біля стіни для страховки. Дуже недовго.','експеримент',3],
+['Колиска','Наїзниця лежачи.','Лежить на спині, ноги розведені.','Лежить зверху на А, ноги разом і прямі між ногами А.','Рухайтеся маленькими погойдуваннями.','ніжно',2],
+['Бокова наїзниця','Наїзниця збоку.','Лежить на спині.','Сидить верхи на А, але боком, перпендикулярно до тіла А.','Незвичний кут. Рухайтеся повільно.','грайливо',2],
+['Шпагат','Для гнучких.','Лежить на боці, верхня нога піднята й лежить на плечі Б.','Стоїть на колінах верхи на нижній нозі А.','Без розтяжки тримайте ногу нижче.','експеримент',3],
+['Диван','Ззаду на дивані.','Стоїть на колінах на дивані, спирається на спинку.','Стоїть позаду А на підлозі або на колінах на дивані.','Так зручно й дуже невимушено.','пристрасно',1],
+['Сходи','Різниця висоти на користь.','Стоїть на сходинку вище, нахиляється й тримається за поручні.','Стоїть позаду на нижчій сходинці.','Тільки на стійких сходах і без поспіху.','експеримент',3],
+['Крісло','Відкинувшись.','Сідає на коліна Б спиною до нього, спирається на підлокітники.','Сидить у кріслі, відкинувшись на спинку.','А керує рухом, спираючись на руки.','грайливо',2],
+['Коала','Обійми ногами.','Лежить на боці обличчям до Б, обидві ноги закинуті на стегна Б.','Лежить на боці обличчям до А, обіймає.','Дуже ніжно й без зусиль.','ніжно',2],
+['Свічка','Ноги вгору.','Лежить на спині на краю ліжка, ноги прямо вгору.','Стоїть на підлозі, тримає ноги А.','Б може тримати щиколотки разом або розвести їх.','пристрасно',2],
+['Трон','На підлозі.','Сідає верхи на Б обличчям до нього.','Сидить на підлозі, спиною спирається на ліжко чи диван.','Плед на підлогу для комфорту.','ніжно',1],
+['Наїзниця з нахилом назад','Відхилившись.','Лежить на спині, коліна зігнуті для опори.','Сидить верхи й відхиляється назад, спирається руками на ноги А.','Б контролює кут нахилу, тож починайте з невеликого.','експеримент',2]
+].map(([n,t,a,b,tip,m,l],i)=>({id:i,n,t,a,b,tip,m,l}));
+const BON=['Перші три хвилини тільки поцілунки.','Залиште одну свічку, решту світла вимкніть.','Один задає темп, інший лише слідує.','Почніть з п’ятихвилинного масажу.','Пошепки скажіть, що подобається найбільше.','Удвічі повільніше, ніж зазвичай.','Посередині поміняйтеся ролями.','Сьогодні не в спальні.','Один із вас із зав’язаними очима.','Не поспішайте до кінця третьої пісні в плейлисті.','Телефони в іншу кімнату.','Наприкінці п’ять хвилин обіймів без слів.'];
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+const SEC={
+ prelude:{t:'Прелюдія',s:'Дотики й поцілунки',items:PRE.map((t,i)=>{const[x,y]=t.split('|');return{id:i,x,y:cap(y)}}),pal:['O','P','B','W']},
+ talk:{t:'Розмови',s:'Чесно й відверто',items:TALK.map((t,i)=>{const[x,y]=t.split('|');return{id:i,x,y:cap(y)}}),pal:['G','W','D','P']},
+ sex:{t:'Без відстані',s:'Тіло до тіла',items:SEX,pal:['B','O','D','P']}
+};
+const PAL={O:{bg:'#FF6D29',fg:'#1a0d06',sub:'#6e2204',box:'rgba(0,0,0,.12)',sh:'#ffb08a'},P:{bg:'#ffb08a',fg:'#1a0d06',sub:'#8a3412',box:'rgba(0,0,0,.08)',sh:'#FF6D29'},
+ B:{bg:'#453027',fg:'#fff',sub:'#ffb08a',box:'rgba(255,255,255,.08)',sh:'#FF6D29'},W:{bg:'#f2efec',fg:'#161316',sub:'#b8461a',box:'rgba(0,0,0,.05)',sh:'#BABABA'},
+ G:{bg:'#BABABA',fg:'#161316',sub:'#4a4a4a',box:'rgba(255,255,255,.35)',sh:'#f2efec'},D:{bg:'#2a2220',fg:'#fff',sub:'#BABABA',box:'rgba(255,255,255,.07)',sh:'#453027'}};
+const SH=[c=>`<circle cx="80" cy="80" r="50" fill="${c}"/><circle cx="125" cy="72" r="40" fill="${c}" opacity=".5"/>`,
+ c=>`<path d="M40 130a60 60 0 0 1 120 0Z" fill="${c}"/><circle cx="100" cy="52" r="20" fill="${c}" opacity=".6"/>`,
+ c=>`<rect x="30" y="32" width="110" height="48" rx="24" fill="${c}"/><rect x="62" y="84" width="110" height="48" rx="24" fill="${c}" opacity=".55"/>`,
+ c=>`<circle cx="100" cy="80" r="56" fill="none" stroke="${c}" stroke-width="28"/>`,
+ c=>`<path d="M100 14c10 32 44 50 44 88a44 44 0 0 1-88 0c0-21 11-32 21-42 0 15 8 25 16 27-7-25 0-54 7-73Z" fill="${c}"/>`,
+ c=>`<rect x="46" y="22" width="34" height="116" rx="4" fill="${c}"/><rect x="112" y="22" width="34" height="116" rx="4" fill="${c}" opacity=".55"/>`];
+const shape=(i,c)=>`<svg viewBox="0 0 200 160" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${SH[(i*7+3)%SH.length](c)}</svg>`;
+const GR=['radial-gradient(60% 45% at 50% 0%,#140404 0%,transparent 75%),linear-gradient(180deg,#d8361a,#ff4a12 55%,#ff9a3c)',
+'radial-gradient(45% 55% at 62% 68%,#ff2e88 0%,transparent 72%),linear-gradient(160deg,#ffd0b0,#ff6d29)',
+'radial-gradient(50% 42% at 50% 72%,#ff6d29 0%,transparent 78%),radial-gradient(100% 70% at 50% 0%,#0c0605 30%,transparent 80%),#3a1a10',
+'radial-gradient(42% 42% at 50% 50%,#0c0605 0%,#5a1a3a 45%,#ff7ac2 100%)',
+'radial-gradient(38% 18% at 50% 50%,#ffe0cc 0%,#ff6d29 45%,transparent 80%),radial-gradient(120% 80% at 50% 50%,#3a140a,#0c0605)',
+'linear-gradient(135deg,#140606 28%,#ff6d29 30% 42%,#ffe0cc 46%,#ff3b1f 50% 68%,#140606 70%)',
+'radial-gradient(closest-side,#0c0605 20%,#ff3b6b 46%,transparent 72%) 50% 50%/86% 86% no-repeat,#2a0a14',
+'radial-gradient(65% 22% at 50% 22%,#ff5fa0,transparent 72%),radial-gradient(65% 22% at 50% 78%,#ff6d29,transparent 72%),#140806',
+'linear-gradient(180deg,#ff6d29 0%,#ff2e88 40%,#ffe6f0 68%,#7a3cff 100%)',
+'radial-gradient(85% 50% at 50% 0%,#ff9a3c,transparent 72%),linear-gradient(180deg,#5a2a1a,#0c0605 85%)',
+'radial-gradient(50% 50% at 28% 28%,#ffd0b0,transparent 72%),radial-gradient(60% 60% at 76% 78%,#453027,transparent 72%),#ff6d29',
+'radial-gradient(38% 38% at 50% 50%,#ff6d29,transparent 72%),radial-gradient(60% 60% at 0 0,#ff2e88,transparent 62%),radial-gradient(60% 60% at 100% 100%,#ffb08a,transparent 62%),#1a0a08'];
+const GL=[['#ff4a12','#ffb070'],['#ff2e88','#ffd0b0'],['#ff6d29','#ffc49a'],['#ff7ac2','#ffd6ea'],['#ff6d29','#ffe0cc'],['#ff3b1f','#ffe0cc'],['#ff3b6b','#ffd0dc'],['#ff5fa0','#ff9a5c'],['#ff2e88','#b18cff'],['#ff9a3c','#ffe0b8'],['#ff6d29','#ffd0b0'],['#ff2e88','#ffb08a']];
+const SOFF={prelude:0,talk:4,sex:8};
+const glw=id=>{const[a,b]=GL[(id*5+SOFF[sec])%GL.length];return `--ga:${a};--gb:${b};--tint:${a}1f;--glow:radial-gradient(48% 52% at 50% 104%,#fff 0%,${b} 22%,${a} 50%,transparent 80%),radial-gradient(85% 70% at 50% 112%,${a}88,transparent 72%)`};
+const split=t=>{const m=t.match(/^(.+?[.?!:])\s+(.+)$/);return m?`<span>${m[1]}</span> <span class="dim">${m[2]}</span>`:t};
+const grd=id=>`--gr:${GR[(id*5+SOFF[sec])%GR.length]}`;
+const FL='<svg viewBox="0 0 48 64" aria-hidden="true"><path d="M24 2C28 16 42 24 42 42a18 18 0 0 1-36 0c0-9 5-14 9-18 0 7 3 11 7 12-3-11 0-24 2-34Z" fill="#fff"/></svg>';
+const pal=i=>PAL[SEC[sec].pal[i%SEC[sec].pal.length]];
+const MOODS=['ніжно','пристрасно','грайливо','експеримент'],LV=['легко','середньо','складно'];
+const ld=k=>{try{return new Set(JSON.parse(localStorage.getItem(k))||[])}catch(e){return new Set()}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify([...v]))}catch(e){}};
+const $=id=>document.getElementById(id);
+const st={};for(const k in SEC)st[k]={fav:ld('ns-fav-'+k),tried:ld('ns-tried-'+k)};
+const F={moods:new Set(MOODS),levels:new Set([1,2,3])};
+let sec='prelude',list=[];
+const dots=l=>`<span class="dots" aria-label="Складність: ${LV[l-1]}">${[1,2,3].map(i=>`<i class="${i<=l?'on':''}"></i>`).join('')}</span>`;
+const mk=(el,sum,items,set,val,extra)=>{el.innerHTML=items.map((x,i)=>`<label class="opt"><input type="checkbox" checked data-v="${val(x,i)}"><span>${x}</span>${extra?extra(i):''}</label>`).join('');
+ const upd=()=>{$(sum).textContent=set.size===items.length?'усі':items.filter((x,i)=>set.has(val(x,i))).join(', ')};
+ el.addEventListener('change',e=>{const c=e.target,v=isNaN(c.dataset.v)?c.dataset.v:+c.dataset.v;
+  if(!c.checked&&set.size===1){c.checked=true;return}c.checked?set.add(v):set.delete(v);upd();buildDeck()});upd()};
+mk($('moods'),'sumM',MOODS,F.moods,x=>x);mk($('levels'),'sumL',LV,F.levels,(x,i)=>i+1,i=>dots(i+1));
+const dds=[...document.querySelectorAll('.ddb')];
+const closeAll=ex=>dds.forEach(b=>{if(b!==ex){b.setAttribute('aria-expanded','false');$(b.getAttribute('aria-controls')).hidden=true}});
+dds.forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const o=b.getAttribute('aria-expanded')!=='true';closeAll(b);b.setAttribute('aria-expanded',o);$(b.getAttribute('aria-controls')).hidden=!o}));
+document.addEventListener('click',e=>{if(!e.target.closest('.dd'))closeAll()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()});
+const filtered=()=>SEC[sec].items.filter(p=>sec!=='sex'||(F.moods.has(p.m)&&F.levels.has(p.l)));
+/* deck carousel */
+const car=$('car');
+const buildDeck=()=>{list=filtered();const s=st[sec];
+ car.innerHTML=list.length?list.map((p,i)=>`<button class="mc gr" role="listitem" data-i="${i}" style="${grd(p.id)}" aria-label="Картка ${p.id+1}, сорочкою догори">
+  <small><span>Вогник</span><span>${s.fav.has(p.id)?'♥':''}${s.tried.has(p.id)?' ✓':''}</span></small><span class="fl"></span><span class="lab">Картка ${p.id+1}</span></button>`).join(''):'<p class="empty">Під ці фільтри карт немає. Послаб фільтри.</p>';
+ $('spin').disabled=!list.length;requestAnimationFrame(fan)};
+let fr=0;const fan=()=>{fr=0;const cx=car.scrollLeft+car.clientWidth/2;
+ for(const el of car.children){if(!el.dataset)continue;const w=el.offsetWidth||1,d=Math.max(-3,Math.min(3,(el.offsetLeft+w/2-cx)/(w*.82))),a=Math.abs(d);
+  el.style.transform=`translateY(${a*a*10}px) rotateY(${-d*24}deg) rotateZ(${d*4}deg) scale(${1-a*.09})`;el.style.zIndex=100-Math.round(a*10);el.style.opacity=a>2.6?0:1}};
+car.addEventListener('scroll',()=>{if(!fr)fr=requestAnimationFrame(fan)},{passive:true});
+addEventListener('resize',()=>requestAnimationFrame(fan));
+const centerIdx=()=>{const cx=car.scrollLeft+car.clientWidth/2;let b=0,bd=1e9;[...car.children].forEach((el,i)=>{const d=Math.abs(el.offsetLeft+el.offsetWidth/2-cx);if(d<bd){bd=d;b=i}});return b};
+const posOf=i=>{const el=car.children[i];return el.offsetLeft+el.offsetWidth/2-car.clientWidth/2};
+car.addEventListener('click',e=>{const m=e.target.closest('.mc');if(!m)return;const i=+m.dataset.i;
+ if(i!==centerIdx()){car.scrollTo({left:posOf(i),behavior:'smooth'});return}openCard(list[i].id)});
+let spinning=false;
+$('spin').addEventListener('click',()=>{if(spinning||!list.length)return;spinning=true;const b=$('spin');b.classList.add('go');
+ const from=car.scrollLeft,cur=centerIdx();let t=Math.floor(Math.random()*list.length);if(list.length>1&&t===cur)t=(t+1+Math.floor(Math.random()*(list.length-1)))%list.length;
+ const to=posOf(t),dur=reduce?0:Math.min(2600,1100+Math.abs(t-cur)*70),t0=performance.now();car.style.scrollSnapType='none';
+ const step=n=>{const k=dur?Math.min(1,(n-t0)/dur):1,e=1-Math.pow(1-k,4);car.scrollLeft=from+(to-from)*e;
+  if(k<1)requestAnimationFrame(step);else{car.style.scrollSnapType='';b.classList.remove('go');const el=car.children[t];el.classList.add('chosen');
+   setTimeout(()=>{el.classList.remove('chosen');spinning=false;openCard(list[t].id)},reduce?0:650)}};requestAnimationFrame(step)});
+const reduce=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+/* open card */
+let olist=[],cur=null;
+const bigCard=p=>{
+ if(sec==='sex'){const bn=BON[Math.floor(Math.random()*BON.length)];
+  return `<article class="bc" style="${glw(p.id)}"><div class="row"><span>Картка ${p.id+1}</span>${dots(p.l)}</div><h3><span>${p.n}</span><span class="dim">${p.t.replace(/\.$/,'')}</span></h3>
+  <div class="txt"><span class="tag">${p.m} · ${LV[p.l-1]}</span><div class="who"><div><b>Партнер А</b>${p.a}</div><div><b>Партнер Б</b>${p.b}</div></div><p class="tip">${p.tip}</p><div class="bonus"><b>Бонус:</b> ${bn}</div></div></article>`}
+ return `<article class="bc" style="${glw(p.id)}"><div class="row"><span>Картка ${p.id+1}</span><span>${SEC[sec].t}</span></div><div class="txt"><p class="task"><span>${p.x}</span><span class="dim">${p.y}</span></p></div></article>`};
+const ogrid=()=>{const s=st[sec];$('ogrid').innerHTML=olist.map(p=>`<button class="ot${p.id===cur.id?' cur':''}" data-id="${p.id}" style="${glw(p.id)}"><span class="row"><span>${p.id+1}</span><span>${s.fav.has(p.id)?'♥':''}${s.tried.has(p.id)?' ✓':''}</span></span><p>${sec==='sex'?p.n:p.x} <span class="dim">${sec==='sex'?p.t.replace(/\.$/,''):p.y}</span></p></button>`).join('')};
+const buildOpen=id=>{olist=list.some(p=>p.id===id)?list:SEC[sec].items;cur=olist.find(p=>p.id===id)||olist[0];
+ $('oc').innerHTML=bigCard(cur);$('oT').textContent=SEC[sec].s;ogrid();upd()};
+const upd=()=>{const s=st[sec],i=olist.indexOf(cur);$('oS').textContent=`${SEC[sec].t} · картка ${cur.id+1} · ${i+1} з ${olist.length}`;
+ $('fav').setAttribute('aria-pressed',s.fav.has(cur.id));$('tried').setAttribute('aria-pressed',s.tried.has(cur.id))};
+const tog=w=>{if(!cur)return;const set=st[sec][w];set.has(cur.id)?set.delete(cur.id):set.add(cur.id);sv(`ns-${w}-${sec}`,set);upd();ogrid()};
+$('fav').addEventListener('click',()=>tog('fav'));$('tried').addEventListener('click',()=>tog('tried'));
+const swap=id=>{location.replace(`#${sec}-c${id}`)};
+$('next').addEventListener('click',()=>{if(olist.length<2)return;let t;do{t=olist[Math.floor(Math.random()*olist.length)]}while(t.id===cur.id);swap(t.id)});
+$('ogrid').addEventListener('click',e=>{const b=e.target.closest('.ot');if(b)swap(+b.dataset.id)});
+const openCard=id=>{location.hash=`${sec}-c${id}`};
+/* navigation */
+const stack=[];
+const parentOf=h=>{const m=h.match(/^(\w+)-c\d+$/);return m?m[1]:SEC[h]?'home':null};
+const goBack=()=>{const h=location.hash.slice(1)||'home',p=parentOf(h)||'home';if(stack.length>1&&stack[stack.length-2]===p)history.back();else location.hash=p};
+$('toDeck').addEventListener('click',goBack);
+document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',goBack));
+let tx=null,ty=0;
+for(const v of [$('deck'),$('open')]){v.addEventListener('touchstart',e=>{const t=e.touches[0];tx=t.clientX<28?t.clientX:null;ty=t.clientY},{passive:true});
+ v.addEventListener('touchend',e=>{if(tx===null)return;const t=e.changedTouches[0];if(t.clientX-tx>70&&Math.abs(t.clientY-ty)<70)goBack();tx=null},{passive:true})}
+document.querySelectorAll('.tile').forEach(t=>t.style.setProperty('--gr',GR[+t.dataset.g]));
+$('total').textContent=PRE.length+TALK.length+SEX.length;
+let lastDeck=null;
+const route=()=>{const h=location.hash.slice(1)||'home';
+ const top=stack[stack.length-1]||'';if(stack.length>1&&stack[stack.length-2]===h)stack.pop();else if(/-c\d+$/.test(top)&&/-c\d+$/.test(h)&&top.split('-')[0]===h.split('-')[0])stack[stack.length-1]=h;else if(top!==h)stack.push(h);
+ closeAll();const m=h.match(/^(\w+)-c(\d+)$/);
+ $('home').hidden=$('deck').hidden=$('open').hidden=true;document.body.classList.remove('lock');
+ if(m&&SEC[m[1]]){if(sec!==m[1]||lastDeck!==sec){sec=m[1];list=filtered()}$('open').hidden=false;buildOpen(+m[2]);scrollTo(0,0);return}
+ if(SEC[h]){const same=lastDeck===h;sec=h;lastDeck=h;$('deck').hidden=false;$('dT').textContent=SEC[h].t;$('dS').textContent=SEC[h].s;$('filters').hidden=h!=='sex';
+  const keep=same&&cur?cur.id:null;buildDeck();scrollTo(0,0);
+  requestAnimationFrame(()=>{const i=keep===null?Math.floor(list.length/2):Math.max(0,list.findIndex(p=>p.id===keep));if(car.children[i]&&list.length){car.scrollLeft=posOf(i)}fan()});return}
+ $('home').hidden=false;lastDeck=null};
+addEventListener('hashchange',route);route();
+}
+</script>
+<script>if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{})</script>
+</body>
+</html>
